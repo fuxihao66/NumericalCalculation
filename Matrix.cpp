@@ -210,23 +210,27 @@ public:
         int n = A->getSize();
 		double u, l;
 		double y[n];
+		double MiddleValue[n];
 		double temp;
 		int MaxIndex[n];
-		double MaxValue = -DBL_MAX;
+		double MaxValue = 4.9406564584124654E-323;
 		
 		for(int k = 0; k < n; k++){
 			
 			//计算中间量
 			//中间量直接存到MEle[i][k]里面
 			for(int i = k; i < n; i++){
+				MiddleValue[i] = MEle[i][k];
 				for(int t = 0; t <= k-1; t++){
-					MEle[i][k]-=MEle[i][t]*MEle[t][k];
-				}
-				if (MEle[i][k] > MaxValue){
+					MiddleValue[i]-=MEle[i][t]*MEle[t][k];
+				}	
+				if (abs(MiddleValue[i]) > abs(MaxValue)){
 					MaxIndex[k] = i;
-					MaxValue = MEle[i][k];
+					MaxValue = MiddleValue[i];
 				}
 			}
+			
+			
 			//交换
 			if (MaxIndex[k] != k){
 				for (int t = 0; t < n; t++){
@@ -234,8 +238,15 @@ public:
 					MEle[k][t] = MEle[MaxIndex[k]][t];
 					MEle[MaxIndex[k]][t] = temp;
 				}
+				temp = MiddleValue[k];
+				MiddleValue[k] = MiddleValue[MaxIndex[k]];
+				MiddleValue[MaxIndex[k]] = temp;
 			}
-			//求u  //由于u[k][k]和s[k]相同，不变		
+			
+			
+			
+			//求u  
+			MEle[k][k] = MiddleValue[k];
 			for(int j = k+1; j < n; j++){
 				u = MEle[k][j];
 				for(int t = 0; t <= k-1; t++){
@@ -244,7 +255,7 @@ public:
 				MEle[k][j] = u;
 			}
 			for(int i = k+1; i < n; i++){
-				MEle[i][k] = MEle[i][k]/MEle[k][k];
+				MEle[i][k] = MiddleValue[i]/MEle[k][k];
 			}
 
 		}
@@ -256,6 +267,7 @@ public:
 			VEle[MaxIndex[k]] = VEle[k];
 		}
 		
+		//回带过程
 		y[0] = VEle[0];
 		for(int i = 1; i < n; i++){
 			y[i] = VEle[i];
