@@ -8,11 +8,46 @@
 #define SEle Solution->Elements
 using namespace std;
 
+int Minimun(int m, int n){
+	if (m > n) {
+		return n;
+	}
+	else {
+ 		return m;
+	}
+}
+int Maximum(int m, int n){
+	if (m > n) {
+		return m;
+	}
+	else {
+		return n;
+	}
+}
+int Maximum(int o, int p, int q){
+	if (o > p)
+	{
+		if (o > q)
+		{
+			return o;
+		}
+		else {
+			return q;
+		}
+	}
+	else if (p > q)
+	{
+		return p;
+	}
+	else {
+		return q;
+	}
+}
 class Matrix{
 private:
 	int row;
 	int column;
-
+	int s, r;
 public:
 	double **Elements;
 	Matrix(int row, int column){
@@ -35,12 +70,48 @@ public:
 			}
 		}
 	}
-	int getSize(){
+
+	//for saving storage
+	//s means the number of diagonals that is above the central diagonal
+	void setValue(int s, int r){
+		double **p = Elements;
+		double temp;
+		this->s = s;
+		this->r = r;
+		cout << "Input Matrix:\n";
+		for (int i = 0; i < this->row; ++i)
+		{
+			for (int j = 0; j < this->column; ++j)
+			{
+				cin >> temp;
+				if (temp != 0.0)
+				{
+					p[i-j+s+1][j] = temp;
+				}
+			}
+		}
+	}
+	void setR(int r){
+		this->r = r;
+	}
+	void setS(int s){
+		this->s = s;
+	}
+	int getR(){
+		return this->r;
+	}
+	int getS(){
+		return this->s;
+	}
+	int getRow(){
 		return this->row;
 	}
-
+	int getColumn(){
+		return this->column;
+	}
 
 };
+
 class Vector{
 private:
 	int size;
@@ -63,6 +134,16 @@ public:
             cout << Elements[i] << "/";
         }
     }
+	int getSize(){
+		return this->size;
+	}
+	double getNorm2(){
+		double norm = 0;
+		for (int i = 0; i < this->size; i++){
+			norm+=Elements[i]*Elements[i];
+		}
+		return sqrt(norm);
+	}
 };
 class EquationGroup{
 private:
@@ -73,16 +154,35 @@ public:
 	void initEquation(int row, int column){
 		A = new Matrix(row, column);
 		A->setValue();
-		b = new Vector(row);
+		b = new Vector(column);
 		b->setValue();
-		Solution = new Vector(row);
+		Solution = new Vector(column);
+	}
+	void initEquation(int row, int column, int r, int s){
+		A = new Matrix(row, column);
+		A->setValue(s, r);
+		b = new Vector(column);
+		b->setValue();
+		Solution = new Vector(A->getColumn());
+	}
+	//function overload
+	//in order to make storage more economical
+	void initEquation(Matrix* A, Vector* b){
+		// A = new Matrix(row, column);
+		// A->setValue(s, r);
+		// b = new Vector(column);
+		// b->setValue();
+		this->A = A;
+		this->b = b;
+		Solution = new Vector(A->getColumn());
+
 	}
 
 	Vector* getSolution(){
 		return Solution;
 	}
 	void Gauss(){
-		int n = A->getSize();
+		int n = A->getRow();
 		double tempVar;
 		for (int k = 0; k <= n-2; ++k)
 		{
@@ -114,7 +214,7 @@ public:
 		}
 	}
 	void GaussPivot(){
-		int n = A->getSize();
+		int n = A->getRow();
 		double tempVar;
 		for (int k = 0; k <= n-2; ++k)
 		{
@@ -165,9 +265,8 @@ public:
 	}
     
 	void TrianglarDecomposition(){
-		int n = A->getSize();
+		int n = A->getRow();
 		double u, l;
-		double y[n];       
 		for(int k = 0; k < n; k++){
 
 			for(int j = k; j < n; j++){
@@ -190,6 +289,10 @@ public:
 
 		}
 
+	}
+	void Substitution(){
+		int n = A->getRow();
+		double y[n]; 
 		y[0] = VEle[0];
 		for(int i = 1; i < n; i++){
 			y[i] = VEle[i];
@@ -207,7 +310,7 @@ public:
 		}
 	}
 	void TrianglarDecompPivot(){
-        int n = A->getSize();
+        int n = A->getColumn();
 		double u, l;
 		double y[n];
 		double MiddleValue[n];
@@ -243,8 +346,6 @@ public:
 				MiddleValue[MaxIndex[k]] = temp;
 			}
 			
-			
-			
 			//求u  
 			MEle[k][k] = MiddleValue[k];
 			for(int j = k+1; j < n; j++){
@@ -259,13 +360,36 @@ public:
 			}
 
 		}
-		
 		//求Qb
 		for (int k = 0; k < n-1; k++){
 			temp = VEle[k];
 			VEle[k] = VEle[MaxIndex[k]];
 			VEle[MaxIndex[k]] = VEle[k];
 		}
+		
+		
+		y[0] = VEle[0];
+		for(int i = 1; i < n; i++){
+			y[i] = VEle[i];
+			for(int t = 0; t <= i-1; t++){
+				y[i]-=MEle[i][t]*y[t];
+			}
+		}
+		SEle[n-1] = y[n-1]/MEle[n-1][n-1];
+		for(int i = n-2; i >= 0; i--){
+			SEle[i] = y[i];
+			for(int t = i+1; t < n; t++){
+				SEle[i]-=MEle[i][t]*SEle[t];
+			}
+			SEle[i]/=MEle[i][i];
+		}
+	}
+
+	//something wrong here
+	void SubstitutionPivot(){
+		int n = A->getRow();
+		double y[n];
+
 		
 		//回带过程
 		y[0] = VEle[0];
@@ -284,9 +408,61 @@ public:
 			SEle[i]/=MEle[i][i];
 		}
 	}
-	
+
+	//only decompit
+	void TrianglarDecompStrip(){
+		int s = A->getS();
+		int r = A->getR();
+		int n = A->getColumn();
+		int temp1;
+		int temp2;
+		for (int k = 0; k < n; k++){
+			temp1 = Minimun(k+s, n-1);
+			for (int j = k; j <= temp1; j++){
+				temp2 = Maximum(1, k-r, j-s);
+				for (int t = temp2; t < k; t++){
+					MEle[k-j+s+1][j] -= MEle[k-t+s+1][t]*MEle[t-j+s+1][j];
+
+				}
+			}
+			temp1 = Minimun(k+r, n-1);
+			for (int i = k+1; i < temp1; i++){
+				temp2 = Maximum(1, i-r, k-s);
+				for (int t = temp2; t < k; t++){
+					MEle[i-k+s+1][k] -= MEle[i-t+s+1][t]*MEle[t-k+s+1][k];
+				}
+				MEle[i-k+s+1][k] =  MEle[i-k+s+1][k]/MEle[s+1][k];
+			}
+		}
+	}
+	//only substitute
+	void SubstitutionStrip(){
+		int temp;
+		int s = A->getS();
+		int r = A->getR();
+		int n = b->getSize();
+		for (int i = 1; i < n; ++i)
+		{
+			temp = Maximum(1, i-r);
+			for (int t = temp; t < i; t++){
+				VEle[i] -= MEle[i-t+s+1][t]*VEle[t];
+			}
+		}
+		SEle[n-1] = VEle[n-1]/MEle[s+1][n-1];
+		for (int i = n-2; i >= 0; i--){
+			SEle[i] = VEle[i];
+			temp = Minimun(i+s, n-1);
+			for (int t = i+1; t < temp; t++){
+				SEle[i] -= MEle[i-t+s+1][t]*SEle[t];
+			}
+			SEle[i] = SEle[i]/MEle[s+1][i];
+			
+		}
+
+	}
+
 	void Jacobi(double ErrorRequirement){
-		int n = A->getSize();
+		int n = A->getRow();
 		double Temp[n];
 		double LocalError;
 		for (int k = 0; k < n; k++){
@@ -311,7 +487,7 @@ public:
 	}
 	
 	void GaussSeidel(double ErrorRequirement){
-		int n = A->getSize();
+		int n = A->getRow();
 		int LocalError;
 		for (int k = 0; k < n; k++){
 			SEle[k] = 0;
@@ -339,14 +515,18 @@ public:
 int main(int argc, char const *argv[])
 {
 	int row, column;
+	int r, s;
 	Vector* Solution;
-	cout << "Input the number of row and column:\n";
+	cout << "Input the number of row and column and r and s:\n";
 	cin >> row;
 	cin >> column;
+	cin >> r;
+	cin >> s;
 	EquationGroup* E = new EquationGroup();
-	E->initEquation(row, column);
+	E->initEquation(row, column, r, s);
 
-	E->TrianglarDecompPivot();
+	E->TrianglarDecompStrip();
+	E->Substitution();
 	Solution = E->getSolution();
     Solution->printValues();
 	return 0;
