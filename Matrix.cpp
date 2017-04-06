@@ -86,11 +86,12 @@ public:
 				cin >> temp;
 				if (temp != 0.0)
 				{
-					p[i-j+s+1][j] = temp;
+					p[i-j+s][j] = temp;
 				}
 			}
 		}
 	}
+
 	void setR(int r){
 		this->r = r;
 	}
@@ -110,6 +111,7 @@ public:
 		return this->column;
 	}
 
+	
 };
 
 class Vector{
@@ -165,17 +167,22 @@ public:
 		b->setValue();
 		Solution = new Vector(A->getColumn());
 	}
-	//function overload
+
 	//in order to make storage more economical
 	void initEquation(Matrix* A, Vector* b){
-		// A = new Matrix(row, column);
-		// A->setValue(s, r);
-		// b = new Vector(column);
-		// b->setValue();
 		this->A = A;
 		this->b = b;
 		Solution = new Vector(A->getColumn());
 
+	}
+
+
+	void printMatrix(){
+		for (int i = 0; i < A->getRow(); i++){
+			for (int j = 0; j < A->getColumn(); j++){
+				cout << MEle[i][j] <<"/";
+			}
+		}
 	}
 
 	Vector* getSolution(){
@@ -419,19 +426,19 @@ public:
 		for (int k = 0; k < n; k++){
 			temp1 = Minimun(k+s, n-1);
 			for (int j = k; j <= temp1; j++){
-				temp2 = Maximum(1, k-r, j-s);
+				temp2 = Maximum(0, k-r, j-s);
 				for (int t = temp2; t < k; t++){
-					MEle[k-j+s+1][j] -= MEle[k-t+s+1][t]*MEle[t-j+s+1][j];
+					MEle[k-j+s][j] -= MEle[k-t+s][t]*MEle[t-j+s][j];
 
 				}
 			}
 			temp1 = Minimun(k+r, n-1);
-			for (int i = k+1; i < temp1; i++){
-				temp2 = Maximum(1, i-r, k-s);
+			for (int i = k+1; i <= temp1; i++){
+				temp2 = Maximum(0, i-r, k-s);
 				for (int t = temp2; t < k; t++){
-					MEle[i-k+s+1][k] -= MEle[i-t+s+1][t]*MEle[t-k+s+1][k];
+					MEle[i-k+s][k] -= MEle[i-t+s][t]*MEle[t-k+s][k];
 				}
-				MEle[i-k+s+1][k] =  MEle[i-k+s+1][k]/MEle[s+1][k];
+				MEle[i-k+s][k] =  MEle[i-k+s][k]/MEle[s][k]; //s+1??
 			}
 		}
 	}
@@ -443,19 +450,19 @@ public:
 		int n = b->getSize();
 		for (int i = 1; i < n; ++i)
 		{
-			temp = Maximum(1, i-r);
+			temp = Maximum(0, i-r);
 			for (int t = temp; t < i; t++){
-				VEle[i] -= MEle[i-t+s+1][t]*VEle[t];
+				VEle[i] -= MEle[i-t+s][t]*VEle[t]; //+1
 			}
 		}
-		SEle[n-1] = VEle[n-1]/MEle[s+1][n-1];
+		SEle[n-1] = VEle[n-1]/MEle[s][n-1];    //s+1????
 		for (int i = n-2; i >= 0; i--){
 			SEle[i] = VEle[i];
 			temp = Minimun(i+s, n-1);
-			for (int t = i+1; t < temp; t++){
-				SEle[i] -= MEle[i-t+s+1][t]*SEle[t];
+			for (int t = i+1; t <= temp; t++){
+				SEle[i] -= MEle[i-t+s][t]*SEle[t]; //+1
 			}
-			SEle[i] = SEle[i]/MEle[s+1][i];
+			SEle[i] = SEle[i]/MEle[s][i];    //s+1
 			
 		}
 
@@ -524,9 +531,9 @@ int main(int argc, char const *argv[])
 	cin >> s;
 	EquationGroup* E = new EquationGroup();
 	E->initEquation(row, column, r, s);
-
+	//E->printMatrix();
 	E->TrianglarDecompStrip();
-	E->Substitution();
+	E->SubstitutionStrip();
 	Solution = E->getSolution();
     Solution->printValues();
 	return 0;
