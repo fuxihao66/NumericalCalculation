@@ -6,6 +6,9 @@
 #define MEle A->Elements
 #define VEle b->Elements
 #define SEle Solution->Elements
+#define YEle y->Elements
+#define UEle u->Elements
+#define TEle tp->Elements
 using namespace std;
 
 int Minimun(int m, int n){
@@ -60,6 +63,8 @@ public:
 		}
 	}
 	void setValue(){
+		this->r = 0;
+		this->s = 0;
 		double **p = Elements;
 		cout << "Input Matrix:\n";
 		for (int i = 0; i < this->row; ++i)
@@ -73,15 +78,15 @@ public:
 
 	//for saving storage
 	//s means the number of diagonals that is above the central diagonal
-	void setValue(int s, int r){
+	void setValue(int row, int column, int s, int r){
 		double **p = Elements;
 		double temp;
 		this->s = s;
 		this->r = r;
 		cout << "Input Matrix:\n";
-		for (int i = 0; i < this->row; ++i)
+		for (int i = 0; i < row; ++i)
 		{
-			for (int j = 0; j < this->column; ++j)
+			for (int j = 0; j < column; ++j)
 			{
 				cin >> temp;
 				if (temp != 0.0)
@@ -111,7 +116,27 @@ public:
 		return this->column;
 	}
 
-	
+	void printMatrix(){
+		for (int i = 0; i < this->row; i++){
+			for (int j = 0; j < this->column; j++){
+				cout << Elements[i][j] << "/";
+			}
+			printf("\n");
+		}
+	}
+	void Translate(double distance){
+		if (this->getR() == this->getS() == 0){
+			for (int i = 0; i < this->getColumn(); ++i)
+			{
+				Elements[i][i] -= distance;
+			}
+		}
+		else{
+			for (int i = 0; i < this->getColumn(); ++i){
+				Elements[this->s][i] -= distance;
+			}
+		}
+	}
 };
 
 class Vector{
@@ -135,6 +160,7 @@ public:
         for (int i = 0; i < this->size; i++){
             cout << Elements[i] << "/";
         }
+        printf("\n");
     }
 	int getSize(){
 		return this->size;
@@ -161,8 +187,8 @@ public:
 		Solution = new Vector(column);
 	}
 	void initEquation(int row, int column, int r, int s){
-		A = new Matrix(row, column);
-		A->setValue(s, r);
+		A = new Matrix(r+s+1, column);
+		A->setValue(row, column, s, r);		//这里的s和r是否相反了
 		b = new Vector(column);
 		b->setValue();
 		Solution = new Vector(A->getColumn());
@@ -175,7 +201,6 @@ public:
 		Solution = new Vector(A->getColumn());
 
 	}
-
 
 	void printMatrix(){
 		for (int i = 0; i < A->getRow(); i++){
@@ -438,7 +463,7 @@ public:
 				for (int t = temp2; t < k; t++){
 					MEle[i-k+s][k] -= MEle[i-t+s][t]*MEle[t-k+s][k];
 				}
-				MEle[i-k+s][k] =  MEle[i-k+s][k]/MEle[s][k]; //s+1??
+				MEle[i-k+s][k] =  MEle[i-k+s][k]/MEle[s][k]; 
 			}
 		}
 	}
@@ -448,24 +473,28 @@ public:
 		int s = A->getS();
 		int r = A->getR();
 		int n = b->getSize();
-		for (int i = 1; i < n; ++i)
-		{
+
+		//保护列向量
+		Vector* tp = new Vector(n);
+		for (int i = 0; i < n; ++i){
+			TEle[i] = VEle[i];
+		}
+		for (int i = 1; i < n; ++i){
 			temp = Maximum(0, i-r);
 			for (int t = temp; t < i; t++){
-				VEle[i] -= MEle[i-t+s][t]*VEle[t]; //+1
+				TEle[i] -= MEle[i-t+s][t]*TEle[t]; 
 			}
 		}
-		SEle[n-1] = VEle[n-1]/MEle[s][n-1];    //s+1????
+		SEle[n-1] = TEle[n-1]/MEle[s][n-1];    
 		for (int i = n-2; i >= 0; i--){
-			SEle[i] = VEle[i];
+			SEle[i] = TEle[i];
 			temp = Minimun(i+s, n-1);
 			for (int t = i+1; t <= temp; t++){
-				SEle[i] -= MEle[i-t+s][t]*SEle[t]; //+1
+				SEle[i] -= MEle[i-t+s][t]*SEle[t];
 			}
-			SEle[i] = SEle[i]/MEle[s][i];    //s+1
-			
+			SEle[i] = SEle[i]/MEle[s][i];   		
 		}
-
+		delete tp;
 	}
 
 	void Jacobi(double ErrorRequirement){
@@ -519,7 +548,124 @@ public:
 	
 };
 
-int main(int argc, char const *argv[])
+double DotProduct(Vector* X, Vector* Y){
+	double product = 0;
+	for (int i = 0; i < X->getSize(); i++){
+		product+=(X->Elements[i]*Y->Elements[i]);
+	}
+	return product;
+}
+
+//modify the row == column
+double PowerMethod(Matrix* A, double Error){
+	double Yita;
+	double Beta;
+	double FormerBeta;
+	double LocalError;
+	int column = A->getColumn();
+	int row = A->getRow();
+	//the s of Matrix_A
+	int s = A->getS();
+	Vector* y = new Vector(column);
+	Vector* u = new Vector(column);
+
+	//generate u0
+	for (int i = 0; i < column; i++){
+		UEle[i] = 0.1;
+	}
+
+	//begin loop, until the error is smaller the given one
+	do {
+		Yita = u->getNorm2();
+		for (int i = 0; i < u->getSize(); i++){
+			YEle[i] = UEle[i]/Yita;
+		}
+
+		//modify u
+		if (A->getR() == A->getS() == 0){
+			for (int i = 0; i < row; i++){
+				UEle[i] = 0;
+				for (int j = 0; j < column; j++){
+					UEle[i] += MEle[i][j]*YEle[j];
+				}
+			}
+		}
+		else {
+			for (int i = 0; i < column; i++){
+				UEle[i] = 0;
+				for (int j = 0; j < column; j++){
+					if (i-j+s >= 0 && i-j+s < row)
+					{
+						UEle[i]+=MEle[i-j+s][j]*YEle[j];
+					}
+				}
+			}
+
+		}
+
+		FormerBeta = Beta;
+		Beta = DotProduct(y, u);
+		LocalError = abs(Beta - FormerBeta)/abs(Beta);
+	} while (LocalError > Error);
+
+	return Beta;
+}
+double InversePowerMethod(Matrix* A, double Error){
+	double Beta;
+	double FormerBeta;
+	double LocalError;
+	double Yita;
+	int column = A->getColumn();
+	int row = A->getRow();
+
+	Vector* y = new Vector(column);
+	Vector* u = new Vector(column);
+
+	EquationGroup* E = new EquationGroup();
+    E->initEquation(A, y);
+
+	//do the decomposition
+	if (A->getR() == A->getS() == 0){
+		E->TrianglarDecomposition();
+	}
+	else {
+		E->TrianglarDecompStrip();
+	}
+
+	//generate u0
+	for (int i = 0; i < column; i++){
+		UEle[i] = 0.1;
+	}
+	//begin loop, until the error is smaller the given one
+	do {
+		Yita = u->getNorm2();
+		for (int i = 0; i < column; i++){
+			YEle[i] = UEle[i]/Yita;
+		}
+
+		//solve equation to get u
+		E->initEquation(A, y);
+
+		if (A->getR() == A->getS() == 0){
+			E->Substitution();
+		}
+		else {
+			E->SubstitutionStrip();
+		}
+
+		for (int i = 0; i < column; i++){
+			UEle[i] = E->getSolution()->Elements[i];
+		}
+
+		FormerBeta = Beta;
+		Beta = DotProduct(y, u);
+		LocalError = abs(1/Beta - 1/FormerBeta)/abs(1/Beta);
+	} while (LocalError > Error);
+
+	return 1/Beta;
+}
+
+int main1()
 {
 	int row, column;
 	int r, s;
@@ -535,6 +681,25 @@ int main(int argc, char const *argv[])
 	E->TrianglarDecompStrip();
 	E->SubstitutionStrip();
 	Solution = E->getSolution();
-    Solution->printValues();
+	Solution->printValues();
+	return 0;
+}
+int main2()
+{
+	int row, column;
+	int s, r;
+	double eigenMin;
+	double eigenMax;
+	cin >> row;
+	cin >> column;
+	cin >> s;
+	cin >> r;
+	Matrix* A = new Matrix(r+s+1, column);
+	A->setValue(row, column, s, r);
+	// Matrix* A = new Matrix(row, column);
+	// A->setValue();
+	//eigenMin = InversePowerMethod(A, 10e-8);
+	eigenMax = InversePowerMethod(A, 10e-8);
+	cout << eigenMax;
 	return 0;
 }
