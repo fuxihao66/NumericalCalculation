@@ -115,7 +115,10 @@ public:
 	int getColumn(){
 		return this->column;
 	}
-
+	void DownGrade(){
+		this->row--;
+		this->column--;
+	}
 	void printMatrix(){
 		for (int i = 0; i < this->row; i++){
 			for (int j = 0; j < this->column; j++){

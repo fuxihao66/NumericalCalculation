@@ -1,6 +1,7 @@
 
 #include <stdio.h>
 #include <iostream>
+#include <iomanip>
 #include "Matrix.cpp"
 #define AREle A_remain->Elements
 using namespace std;
@@ -63,12 +64,10 @@ int main(int argc, char const *argv[])
 
 	//get the one with max module
 	lambda_max = PowerMethod(A, Epthron);
-	cout << lambda_max << endl;
 
 	//translate to get the other
 	A->Translate(abs(lambda_max));
 	lambda1 = InversePowerMethod(A, Epthron) + abs(lambda_max);
-	cout << lambda1 << endl;
 
 	//compare lambda1 and lambda501
 	if (lambda1 > lambda_max){
@@ -82,15 +81,14 @@ int main(int argc, char const *argv[])
 	//get lambda_s
 	Recover(A_remain, A);
 	lambda_s = InversePowerMethod(A, Epthron);
-	//A has been changed (now it stands for L+U, thus the products of the diagonal is detA)
+
+	//A stands for L+U, thus the products of the diagonal is detA
 	for (int i = 0; i < 501; ++i)
 	{
 		DET_A*=MEle[s][i];
 	}
-	cout << lambda_s << endl;
 
 	cond = abs(lambda_max/lambda_s);
-	cout << "cond = " << cond << endl;
 
 	//translate to get those close to Miu
 	for (int i = 0; i < 39; ++i)
@@ -100,10 +98,14 @@ int main(int argc, char const *argv[])
 		//translate
 		A->Translate(Miu[i]);
 
-		cout << "lambda_miu " << scientific << InversePowerMethod(A, Epthron)+Miu[i] << endl;
+		cout << "lambda_miu" << i+1 << " = "<< setprecision(11) << scientific << InversePowerMethod(A, Epthron)+Miu[i] << endl;
 	}
 
-	cout << "det_A = " <<DET_A;
+	cout << "lambda501 = " << lambda501 << endl;
+	cout << "lambda1 = " << lambda1 << endl;
+	cout << "lambda_s = " << lambda_s << endl;
+	cout << "cond = " << cond << endl;
+	cout << "det_A = " <<DET_A << endl;
 	
 	return 0;
 }
